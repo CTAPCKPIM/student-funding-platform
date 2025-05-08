@@ -1,6 +1,9 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
+import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
+import "@openzeppelin/contracts/proxy/beacon/BeaconProxy.sol";
 // import "hardhat/console.sol";
 
 /**
@@ -8,6 +11,131 @@ pragma solidity ^0.8.28;
  * @notice Contract is used to create and manage student funding projects
  * @author CTAPCKPIM
  */
-contract FactorySFP {
-    // TODO: init logic of the contract..
+contract FactorySFP is Initializable, OwnableUpgradeable {
+    /**
+     * @notice All variables:
+     * { totalProjects } - The total number of projects created
+     * { beaconAddress } - The address of the beacon contract
+     */
+    uint256 public totalProjects;
+    address public beaconAddress;
+
+    /**
+     * @notice Structure to store the `project` information
+     * @param timestamp The timestamp when the project was created 
+     * @param projectAddress The address of the project contract
+     */
+    struct Project {
+        uint256 amount;
+        uint256 timestamp;
+        string name;
+        address projectAddress;
+    }
+
+    /**
+     * @notice All mappings:
+     * { projects } - Mapping to store the `projects` of the users
+     * { whitelist } - The mapping to store the `whitelisted` addresses
+     */
+    mapping(address => Project[]) public projects;
+    mapping(address => bool) public whitelist;
+
+    /**
+     * @notice All events:
+     */
+    event BeaconAddressUpdated(address indexed _addressOld, address indexed _addressNew);
+    event ProjectCreated(address indexed _address, address indexed _owner);
+    event WhitelistStatusUpdated(address indexed _address, bool _status);
+
+    /**
+     * @notice Check for zero address
+     */
+    modifier notZeroAddress(address _address) {
+        require(_address != address(0), "Zero address not allowed");
+        _;
+    }
+
+    /**
+     * @notice Check for zero amount
+     */
+    modifier notZeroAmount(uint256 _amount) {
+        require(_amount > 0, "Zero amount not allowed");
+        _;
+    }
+
+    /**
+     * @notice Ckeck for zero string
+     */
+    modifier notZeroString(string memory _string) {
+        require(bytes(_string).length > 0, "Zero string not allowed");
+        _;
+    }
+
+    /**
+     * @notice Check if the address is whitelisted
+     */
+    modifier onlyWhitelisted() {
+        require(whitelist[msg.sender], "Not whitelisted");
+        _;
+    }
+
+    /**
+     * @notice Initializes the factory
+     * @param _beaconAddress The address of the beacon contract
+     */
+    function initialize(address _beaconAddress) public initializer notZeroAddress(_beaconAddress) {
+        __Ownable_init(msg.sender);
+        beaconAddress = _beaconAddress;
+    }
+
+    /**
+     * @notice Change the beacon address
+     * @param _beaconAddress The address of the beacon contract
+     */
+    function changeBeaconAddress(address _beaconAddress) public onlyOwner notZeroAddress(_beaconAddress) {
+        emit BeaconAddressUpdated(beaconAddress, _beaconAddress);
+        beaconAddress = _beaconAddress;
+    }
+
+    /**
+    * @notice Set the whitelist status for an address (add or remove)
+    * @param _address The address for which to set the status
+    * @param _status The status to set (true to add, false to remove)
+    */
+    function setWhitelistStatus(address _address, bool _status) public onlyOwner notZeroAddress(_address) {
+        whitelist[_address] = _status;
+        emit WhitelistStatusUpdated(_address, _status);
+    }
+
+    /**
+     * TODO: Finish the function after write BeaconSFP contract
+     *
+     * @notice Creates a new project using the BeaconProxy pattern
+     * @return projectAddress The address of the newly created project
+     */
+    function createProject(
+        uint256 _amount,
+        string memory _name
+    ) public 
+    onlyWhitelisted
+    notZeroAmount(_amount)
+    notZeroString(_name)
+    returns (address projectAddress) {
+        totalProjects++;
+
+        // Create a new BeaconProxy instance using the beacon address
+        projectAddress = address(new BeaconProxy(beaconAddress, ""));
+
+        // TODO: Initialize the new project contract with the provided parameters
+
+        projects[msg.sender].push(
+            Project(
+                _amount,
+                block.timestamp,
+                _name, projectAddress
+            )
+        );
+
+        emit ProjectCreated(projectAddress, msg.sender);
+    }
 }
