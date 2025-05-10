@@ -1,12 +1,14 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
-// import "hardhat/console.sol";
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
+
 import "@openzeppelin/contracts-upgradeable/token/ERC20/ERC20Upgradeable.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+
+import "./lib/HelperSFP.sol";
 
 /**
  * @title Student Funding Pool Implementation
@@ -20,7 +22,26 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
  * @author CTAPCKPIM
  */
 contract BeaconSFP is Initializable, OwnableUpgradeable, ERC20Upgradeable {
+    /**
+     * @notice Connect the HelperSFP library to the this contract
+     */
+    using HelperSFP for address;
+    using HelperSFP for uint256;
+    using HelperSFP for string;
+    
     using SafeERC20 for IERC20;
+
+    /**
+     * @notice All errors thrown:
+     * - OnlyFactoryError: Thrown when a function is called by an address that is not the factory
+     * - AmountExceedsLimitError: Thrown when the amount exceeds the funding pool limit
+     * - AmountExceedsError: Thrown when the amount exceeds the balance of the address
+     * - FunctionCallError: Thrown when a function is called with an invalid function signature
+     */
+    error OnlyFactoryError();
+    error AmountExceedsLimitError();
+    error AmountExceedsError();
+    error FunctionCallError();
 
     /**
      * @notice All variables:
@@ -38,13 +59,16 @@ contract BeaconSFP is Initializable, OwnableUpgradeable, ERC20Upgradeable {
      * @notice All events:
      */
     event contributedNative(address indexed _contributor, uint256 _amount);
+    event StuckTokensWithdrawn(address indexed _token, uint256 _amount);
+    event Minted(address indexed _address, uint256 _amount);
+    event Burned(address indexed _address, uint256 _amount);
     event contributedERC20(
         address indexed _contributor,
         address indexed _token,
         uint256 _amount
     );
 
-        /**
+    /**
      * @notice Check for zero address
      */
     modifier notZeroAddress(address _address) {
@@ -64,7 +88,7 @@ contract BeaconSFP is Initializable, OwnableUpgradeable, ERC20Upgradeable {
      * @notice Check for factory address
      */
     modifier onlyFactory() {
-        require(msg.sender == factoryAddress, "Only factory can call this function");
+        if (msg.sender != factoryAddress) revert OnlyFactoryError();
         _;
     }
 
@@ -72,7 +96,7 @@ contract BeaconSFP is Initializable, OwnableUpgradeable, ERC20Upgradeable {
      * @notice Check for limit of the amount
      */
     modifier limitAmount(uint256 _amount) {
-        require(_amount <= amount, "Amount exceeds funding pool limit");
+        if (_amount > amount) revert AmountExceedsLimitError();
         _;
     }
 
@@ -90,10 +114,14 @@ contract BeaconSFP is Initializable, OwnableUpgradeable, ERC20Upgradeable {
         string memory _tokenName,
         string memory _tokenSymbol,
         address _owner
-    ) public 
-    initializer
-    onlyFactory
-    {
+    ) public initializer onlyFactory {
+        // Validate the parameters
+        _amount.notZeroAmount();
+        _projectName.notZeroString();
+        _tokenName.notZeroString();
+        _tokenSymbol.notZeroString();
+        _owner.notZeroAddress();
+
         __Ownable_init(_owner);
         __ERC20_init(_tokenName, _tokenSymbol);
 
@@ -106,14 +134,15 @@ contract BeaconSFP is Initializable, OwnableUpgradeable, ERC20Upgradeable {
     /**
      * @notice Contribute to the project with native currency
      */
-    function contributeNative() external payable notZeroAmount(msg.value) limitAmount(msg.value) {
+    function contributeNative() external payable limitAmount(msg.value) {
+        msg.value.notZeroAmount();
+
         amount -= msg.value;
-
-        // Transfer the funds to the contract
-        payable(owner()).transfer(msg.value);
-
         // Mint tokens to the contributor
         _mint(msg.sender, msg.value);
+        // Transfer the funds to the owner
+        payable(owner()).transfer(msg.value);
+
         emit contributedNative(msg.sender, msg.value);
     }
 
@@ -125,14 +154,16 @@ contract BeaconSFP is Initializable, OwnableUpgradeable, ERC20Upgradeable {
     function contributeERC20(
         address _token,
         uint256 _amount
-    ) external notZeroAmount(_amount) notZeroAddress(_token) limitAmount(_amount) {
-        amount -= _amount;
+    ) external limitAmount(_amount) {
+        _amount.notZeroAmount();
+        _token.notZeroAddress();
 
+        amount -= _amount;
+        // Mint tokens to the contributor
+        _mint(msg.sender, _amount);
         // Transfer the tokens to the contract
         IERC20(_token).safeTransferFrom(msg.sender, owner(), _amount);
 
-        // Mint tokens to the contributor
-        _mint(msg.sender, _amount);
         emit contributedERC20(msg.sender, _token, _amount);
     }
 
@@ -144,8 +175,12 @@ contract BeaconSFP is Initializable, OwnableUpgradeable, ERC20Upgradeable {
     function mint(
         uint256 _amount,
         address _address
-    ) external onlyOwner notZeroAmount(_amount) notZeroAddress(_address) {
+    ) external onlyOwner {
+        _amount.notZeroAmount();
+        _address.notZeroAddress();
+
         _mint(_address, _amount);
+        emit Minted(_address, _amount);
     }
 
     /**
@@ -157,20 +192,44 @@ contract BeaconSFP is Initializable, OwnableUpgradeable, ERC20Upgradeable {
         uint256 _amount,
         address _address
     ) external onlyOwner notZeroAmount(_amount) notZeroAddress(_address) {
+        _amount.notZeroAmount();
+        _address.notZeroAddress();
+
+        if (balanceOf(_address) < _amount) revert AmountExceedsError();
+
         _burn(_address, _amount);
+        emit Burned(_address, _amount);
+    }
+
+    /**
+     * @notice Function to withdraw stuck tokens form the contract
+     * @param _token The address of the token contract
+     * @param _amount The amount of tokens to withdraw
+     */
+    function withdrawStuckTokens(
+        address _token,
+        uint256 _amount
+    ) external onlyOwner {
+        _token.notZeroAddress();
+        _amount.notZeroAmount();
+
+        if (IERC20(_token).balanceOf(address(this)) < _amount) revert AmountExceedsError();
+
+        IERC20(_token).safeTransfer(owner(), _amount);
+        emit StuckTokensWithdrawn(_token, _amount);
     }
 
     /**
      * @notice Fallback function to accept native currency
      */
     fallback() external payable {
-        revert("Wrong function called");
+        revert FunctionCallError();
     }
 
     /**
      * @notice Receive function to accept native currency
      */
     receive() external payable {
-        revert("Wrong function called");
+        revert FunctionCallError();
     }
 }
