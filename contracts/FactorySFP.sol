@@ -4,10 +4,8 @@ pragma solidity ^0.8.28;
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts/proxy/beacon/BeaconProxy.sol";
-
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-
 import "./BeaconSFP.sol";
 import "./lib/HelperSFP.sol";
 

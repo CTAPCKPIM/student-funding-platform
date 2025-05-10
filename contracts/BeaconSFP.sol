@@ -3,11 +3,9 @@ pragma solidity ^0.8.28;
 
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
-
 import "@openzeppelin/contracts-upgradeable/token/ERC20/ERC20Upgradeable.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-
 import "./lib/HelperSFP.sol";
 
 /**
@@ -67,22 +65,6 @@ contract BeaconSFP is Initializable, OwnableUpgradeable, ERC20Upgradeable {
         address indexed _token,
         uint256 _amount
     );
-
-    /**
-     * @notice Check for zero address
-     */
-    modifier notZeroAddress(address _address) {
-        require(_address != address(0), "Zero address not allowed");
-        _;
-    }
-
-    /**
-     * @notice Check for zero amount
-     */
-    modifier notZeroAmount(uint256 _amount) {
-        require(_amount > 0, "Zero amount not allowed");
-        _;
-    }
 
     /**
      * @notice Check for factory address
@@ -191,7 +173,7 @@ contract BeaconSFP is Initializable, OwnableUpgradeable, ERC20Upgradeable {
     function burn(
         uint256 _amount,
         address _address
-    ) external onlyOwner notZeroAmount(_amount) notZeroAddress(_address) {
+    ) external onlyOwner {
         _amount.notZeroAmount();
         _address.notZeroAddress();
 
