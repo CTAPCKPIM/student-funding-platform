@@ -4,6 +4,7 @@ pragma solidity ^0.8.28;
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts/proxy/beacon/BeaconProxy.sol";
+import "./BeaconSFP.sol";
 // import "hardhat/console.sol";
 
 /**
@@ -22,13 +23,19 @@ contract FactorySFP is Initializable, OwnableUpgradeable {
 
     /**
      * @notice Structure to store the `project` information
+     * @param amount The amount of funding pool
      * @param timestamp The timestamp when the project was created 
+     * @param name The name of the project
+     * @param tokenName The name of the token
+     * @param tokenSymbol The symbol of the token
      * @param projectAddress The address of the project contract
      */
     struct Project {
         uint256 amount;
         uint256 timestamp;
         string name;
+        string tokenName;
+        string tokenSymbol;
         address projectAddress;
     }
 
@@ -44,8 +51,15 @@ contract FactorySFP is Initializable, OwnableUpgradeable {
      * @notice All events:
      */
     event BeaconAddressUpdated(address indexed _addressOld, address indexed _addressNew);
-    event ProjectCreated(address indexed _address, address indexed _owner);
     event WhitelistStatusUpdated(address indexed _address, bool _status);
+    event ProjectCreated(
+        uint256 _amount,
+        string _name,
+        string _tokenName,
+        string _tokenSymbol,
+        address indexed _owner,
+        address indexed _address
+    );
 
     /**
      * @notice Check for zero address
@@ -115,27 +129,62 @@ contract FactorySFP is Initializable, OwnableUpgradeable {
      */
     function createProject(
         uint256 _amount,
-        string memory _name
+        string memory _name,
+        string memory _tokenName,
+        string memory _tokenSymbol
     ) public 
     onlyWhitelisted
     notZeroAmount(_amount)
     notZeroString(_name)
-    returns (address projectAddress) {
+    notZeroString(_tokenName)
+    notZeroString(_tokenSymbol)
+    returns (address) {
         totalProjects++;
 
         // Create a new BeaconProxy instance using the beacon address
-        projectAddress = address(new BeaconProxy(beaconAddress, ""));
+        BeaconProxy project = new BeaconProxy(beaconAddress, "");
+        BeaconSFP(payable(address(project))).initialize(
+            _amount,
+            _name,
+            _tokenName,
+            _tokenSymbol,
+            msg.sender
+        );
 
-        // TODO: Initialize the new project contract with the provided parameters
-
+        // Store the project information in the projects mapping
         projects[msg.sender].push(
             Project(
                 _amount,
                 block.timestamp,
-                _name, projectAddress
+                _name,
+                _tokenName,
+                _tokenSymbol, 
+                address(project)
             )
         );
 
-        emit ProjectCreated(projectAddress, msg.sender);
+        emit ProjectCreated(
+            _amount,
+            _name,
+            _tokenName,
+            _tokenSymbol,
+            msg.sender,
+            address(project));
+
+        return address(project);
+    }
+
+    /**
+     * @notice Fallback function to accept native currency
+     */
+    fallback() external payable {
+        revert("Wrong function called");
+    }
+
+    /**
+     * @notice Receive function to accept native currency
+     */
+    receive() external payable {
+        revert("Wrong function called");
     }
 }
