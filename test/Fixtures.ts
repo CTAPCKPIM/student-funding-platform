@@ -61,6 +61,44 @@ export const deployFixture = async () => {
 }
 
 /**
+ * @notice Get the deployed Token contract
+ * @param initialized - boolean to check if the token is deployed and initialized
+ */
+export const tokenFixture = async ( initialized: boolean = false ) => {
+    const { owner, addr1, token, tokenAddress, ...rest } = await deployFixture();
+    const Beacon = await ethers.getContractFactory("BeaconSFP");
+    const beaconMock = await Beacon.deploy();
+
+    await beaconMock.waitForDeployment();
+    const beaconMockAddress = await beaconMock.getAddress();
+
+    // Init the beaconMock contract, approval and mint tokens
+    if ( initialized ) {
+        await beaconMock.initialize(
+                AMOUNT,
+                NAME,
+                NAME,
+                SYMBOL,
+                owner.address
+            );
+        await token.connect(addr1).approve(beaconMockAddress, AMOUNT);
+        await token.connect(owner).mint(addr1.address, AMOUNT);
+        await token.connect(owner).mint(beaconMockAddress, AMOUNT);
+        await beaconMock.connect(owner).mint(owner.address, AMOUNT);
+    }
+
+    return {
+        token,
+        beaconMock,
+        beaconMockAddress,
+        tokenAddress,
+        owner,
+        addr1,
+        ...rest
+    };
+}
+
+/**
  * @notice Set and get settings contracts
  */
 export const settingsFixture = async () => {
@@ -70,7 +108,7 @@ export const settingsFixture = async () => {
     await factory.setWhitelistStatus(owner.address, true);
     await factory.setWhitelistStatus(addr1.address, true);
 
-    // Mint the token to FactorySFP and owner
+    // Mint the token to FactorySFP, owner and addr1
     await token.connect(owner).mint(factoryAddress, AMOUNT);
     await token.connect(owner).mint(owner.address, AMOUNT);
 
