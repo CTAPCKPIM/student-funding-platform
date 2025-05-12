@@ -71,7 +71,7 @@ contract FactorySFP is Initializable, OwnableUpgradeable {
     /**
      * @notice All events:
      */
-    event BeaconAddressUpdated(address indexed _addressOld, address indexed _addressNew);
+    event BeaconAddressChanged(address indexed _addressOld, address indexed _addressNew);
     event WhitelistStatusUpdated(address indexed _address, bool _status);
     event StuckTokensWithdrawn(address indexed _token, uint256 _amount);
     event ProjectCreated(
@@ -109,7 +109,7 @@ contract FactorySFP is Initializable, OwnableUpgradeable {
     function changeBeaconAddress(address _beaconAddress) public onlyOwner {
         _beaconAddress.notZeroAddress();
 
-        emit BeaconAddressUpdated(beaconAddress, _beaconAddress);
+        emit BeaconAddressChanged(beaconAddress, _beaconAddress);
         beaconAddress = _beaconAddress;
     }
 

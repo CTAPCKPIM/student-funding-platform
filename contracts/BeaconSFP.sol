@@ -31,12 +31,10 @@ contract BeaconSFP is Initializable, OwnableUpgradeable, ERC20Upgradeable {
 
     /**
      * @notice All errors thrown:
-     * - OnlyFactoryError: Thrown when a function is called by an address that is not the factory
      * - AmountExceedsLimitError: Thrown when the amount exceeds the funding pool limit
      * - AmountExceedsError: Thrown when the amount exceeds the balance of the address
      * - FunctionCallError: Thrown when a function is called with an invalid function signature
      */
-    error OnlyFactoryError();
     error AmountExceedsLimitError();
     error AmountExceedsError();
     error FunctionCallError();
@@ -46,33 +44,23 @@ contract BeaconSFP is Initializable, OwnableUpgradeable, ERC20Upgradeable {
      * { amount } - amount of funding pool
      * { timestamp } - The timestamp when the project was created
      * { projectName } - The name of the project
-     * { factoryAddress } - The address of the factory contract
      */
     uint256 public amount;
     uint256 public timestamp;
     string public projectName;
-    address public factoryAddress;
 
     /**
      * @notice All events:
      */
-    event contributedNative(address indexed _contributor, uint256 _amount);
+    event ContributedNative(address indexed _contributor, uint256 _amount);
     event StuckTokensWithdrawn(address indexed _token, uint256 _amount);
     event Minted(address indexed _address, uint256 _amount);
     event Burned(address indexed _address, uint256 _amount);
-    event contributedERC20(
+    event ContributedERC20(
         address indexed _contributor,
         address indexed _token,
         uint256 _amount
     );
-
-    /**
-     * @notice Check for factory address
-     */
-    modifier onlyFactory() {
-        if (msg.sender != factoryAddress) revert OnlyFactoryError();
-        _;
-    }
 
     /**
      * @notice Check for limit of the amount
@@ -96,7 +84,7 @@ contract BeaconSFP is Initializable, OwnableUpgradeable, ERC20Upgradeable {
         string memory _tokenName,
         string memory _tokenSymbol,
         address _owner
-    ) public initializer onlyFactory {
+    ) public initializer {
         // Validate the parameters
         _amount.notZeroAmount();
         _projectName.notZeroString();
@@ -110,7 +98,6 @@ contract BeaconSFP is Initializable, OwnableUpgradeable, ERC20Upgradeable {
         amount = _amount;
         projectName = _projectName;
         timestamp = block.timestamp;
-        factoryAddress = msg.sender;
     }
 
     /**
@@ -125,7 +112,7 @@ contract BeaconSFP is Initializable, OwnableUpgradeable, ERC20Upgradeable {
         // Transfer the funds to the owner
         payable(owner()).transfer(msg.value);
 
-        emit contributedNative(msg.sender, msg.value);
+        emit ContributedNative(msg.sender, msg.value);
     }
 
     /**
@@ -146,7 +133,7 @@ contract BeaconSFP is Initializable, OwnableUpgradeable, ERC20Upgradeable {
         // Transfer the tokens to the contract
         IERC20(_token).safeTransferFrom(msg.sender, owner(), _amount);
 
-        emit contributedERC20(msg.sender, _token, _amount);
+        emit ContributedERC20(msg.sender, _token, _amount);
     }
 
     /**
