@@ -138,12 +138,12 @@ contract BeaconSFP is Initializable, OwnableUpgradeable, ERC20Upgradeable {
 
     /**
      * @notice Function to mint tokens
-     * @param _amount The amount of tokens to mint
      * @param _address The address to mint the tokens to
+     * @param _amount The amount of tokens to mint
      */
     function mint(
-        uint256 _amount,
-        address _address
+        address _address,
+        uint256 _amount
     ) external onlyOwner {
         _amount.notZeroAmount();
         _address.notZeroAddress();
@@ -154,12 +154,12 @@ contract BeaconSFP is Initializable, OwnableUpgradeable, ERC20Upgradeable {
 
     /**
      * @notice Function to burn tokens
-     * @param _amount The amount of tokens to burn
      * @param _address The address to burn the tokens from
+     * @param _amount The amount of tokens to burn
      */
     function burn(
-        uint256 _amount,
-        address _address
+        address _address,
+        uint256 _amount
     ) external onlyOwner {
         _amount.notZeroAmount();
         _address.notZeroAddress();
