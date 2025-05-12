@@ -1,11 +1,22 @@
 import { loadFixture } from "@nomicfoundation/hardhat-toolbox/network-helpers";
 import { anyValue } from "@nomicfoundation/hardhat-chai-matchers/withArgs";
 import { expect } from "chai";
-import hre from "hardhat";
+
 import { deployFixture, settingsFixture, ZERO_ADDRESS, AMOUNT } from "./Fixtures";
 
 describe("FactorySFP", function () {
     describe("Deployment", function () {
+        it("Should revert if re-initialization is attempted", async function () {
+            const { factory, beaconAddress} = await loadFixture(deployFixture);
+
+            await expect(
+                factory.initialize(beaconAddress)
+            ).to.be.revertedWithCustomError(
+                factory,
+                "InvalidInitialization"
+            );
+        });
+
         it("Should set the right owner", async function () {
             const { factory, owner } = await loadFixture(deployFixture);
 
@@ -16,17 +27,6 @@ describe("FactorySFP", function () {
             const { factory, beaconAddress } = await loadFixture(deployFixture);
 
             expect(await factory.beaconAddress()).to.equal(beaconAddress);
-        });
-
-        it("Should revert if re-initialization is attempted", async function () {
-            const { factory, beaconAddress} = await loadFixture(deployFixture);
-
-            await expect(
-                factory.initialize(beaconAddress)
-            ).to.be.revertedWithCustomError(
-                factory,
-                "InvalidInitialization"
-            );
         });
     });
 
@@ -322,7 +322,7 @@ describe("FactorySFP", function () {
             const ownerBalance = await token.balanceOf(factory.owner());
 
             expect(balance).to.equal(0);
-            expect(ownerBalance).to.equal(AMOUNT);
+            expect(ownerBalance).to.equal(AMOUNT*2n);
         });
 
         it("Should emit StuckTokensWithdrawn event", async function () {
