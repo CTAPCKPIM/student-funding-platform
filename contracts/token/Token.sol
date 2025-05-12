@@ -20,6 +20,12 @@ contract Token is Initializable, OwnableUpgradeable, ERC20Upgradeable {
     using HelperSFP for string;
 
     /**
+     * @notice All errors thrown:
+     * - FunctionCallError: Thrown when a function is called with an invalid function signature
+     */
+    error FunctionCallError();
+
+    /**
      * @notice All events:
      */
     event Minted(address indexed _address, uint256 _amount);
@@ -31,6 +37,9 @@ contract Token is Initializable, OwnableUpgradeable, ERC20Upgradeable {
      * @param _symbol The symbol of the token
      */
     function initialize(string memory _name, string memory _symbol) public initializer {
+        _name.notZeroString();
+        _symbol.notZeroString();
+
         __Ownable_init(msg.sender);
         __ERC20_init(_name, _symbol);
     }
@@ -59,5 +68,19 @@ contract Token is Initializable, OwnableUpgradeable, ERC20Upgradeable {
         _burn(_address, _amount);
 
         emit Burned(_address, _amount);
+    }
+
+    /**
+     * @notice Fallback function to accept native currency
+     */
+    fallback() external payable {
+        revert FunctionCallError();
+    }
+
+    /**
+     * @notice Receive function to accept native currency
+     */
+    receive() external payable {
+        revert FunctionCallError();
     }
 }

@@ -9,6 +9,8 @@ import { ethers, upgrades } from "hardhat";
  */
 export const ZERO_ADDRESS = "0x0000000000000000000000000000000000000000";
 export const AMOUNT = ethers.parseEther("1000");
+export const NAME = "Ukraine University";
+export const SYMBOL = "UU";
 
 /**
  * @notice Get addresses of the signers
@@ -68,8 +70,9 @@ export const settingsFixture = async () => {
     await factory.setWhitelistStatus(owner.address, true);
     await factory.setWhitelistStatus(addr1.address, true);
 
-    // Mint the token to FactorySFP
+    // Mint the token to FactorySFP and owner
     await token.connect(owner).mint(factoryAddress, AMOUNT);
+    await token.connect(owner).mint(owner.address, AMOUNT);
 
     return {
         owner,
