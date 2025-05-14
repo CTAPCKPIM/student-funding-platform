@@ -15,41 +15,33 @@ async function main() {
   console.log("\n" + "-".repeat(40));
   console.log(`Deploying contracts from an account: ${deployer.address}`);
 
-  // Get the contract factories
-  const FactorySFP = await ethers.getContractFactory("FactorySFP");
-  const BeaconSFP = await ethers.getContractFactory("BeaconSFP");
-  const Token = await ethers.getContractFactory("Token");
-
   // Deploy the `beacon` contract
   console.log("Deploying the Beacon contract...");
-  const beacon = await upgrades.deployBeacon(BeaconSFP);
-  await beacon.waitForDeployment();
-  const beaconAddress = await beacon.getAddress();
+  const beaconAddress = await deployContract("BeaconSFP", [], true);
   console.log(`Beacon contract deployed at: ${beaconAddress}`);
 
   // Deploy the proxy `factory` contract
   console.log("Deploying Factory SFP Proxy...");
-  const factory = await upgrades.deployProxy(FactorySFP, [ beaconAddress ]);
-  await factory.waitForDeployment();
-  const factoryAddress = await factory.getAddress();
+  const factoryAddress = await deployContract("FactorySFP", [ beaconAddress ]);
   console.log(`Factory SFP Proxy deployed at: ${factoryAddress}`);
 
   // Deploy the proxy `token` contract
   console.log("Deploying the token...");
-  const token = await upgrades.deployProxy(Token, [ tokenName, tokenSymbol ]); 
-  await token.waitForDeployment();
-  const tokenAddress = await token.getAddress();
+  const tokenAddress = await deployContract("Token", [ tokenName, tokenSymbol ]);
   console.log(`Token deployed at: ${tokenAddress}`);
 
 
   // Control logs after deployment
-  console.log("-".repeat(40));
-  console.log("\nDeployment process complete!");
-  console.log("-".repeat(40));
-  console.log(`Factory address: ${factoryAddress}`);
-  console.log(`Beacon address: ${beaconAddress}`);
-  console.log(`Token address: ${tokenAddress}`);
-  console.log("-".repeat(40));
+  console.log(
+    "-".repeat(40) +
+    "\nDeployment process complete!" +
+    "\n" + "-".repeat(40)
+  );
+  console.log(
+    `FACTORY address: ${factoryAddress}
+    \nBEACON address: ${beaconAddress}
+    \nTOKEN address: ${tokenAddress}\n` +
+    "-".repeat(40));
 
   fs.writeFileSync('deployment-addresses.json', JSON.stringify({
     factory: factoryAddress,
@@ -57,6 +49,36 @@ async function main() {
     token: tokenAddress
   }, null, 2));
   console.log("The addresses of deployed contracts are stored in deployment-addresses.json");
+}
+
+/**
+ * @notice Help deploy the contracts
+ * @param contractName - Name of the contract
+ * @param args - Arguments for the contract initialization
+ * @param isBeacon - Boolean to check if the contract is a beacon
+ */
+async function deployContract(
+    contractName: string,
+    args: any[] = [],
+    isBeacon: boolean = false
+) : Promise<string> {
+  const Contract = await ethers.getContractFactory(contractName);
+  let address;
+
+  // Check if the contract is a beacon or a proxy contract
+  if (isBeacon) {
+    const beacon = await upgrades.deployBeacon(Contract);
+
+    await beacon.waitForDeployment();
+    address = await  beacon.getAddress();
+  } else {
+    const contract = await upgrades.deployProxy(Contract, args);
+
+    await contract.waitForDeployment();
+    address = await contract.getAddress();
+  }
+
+  return address;
 }
 
 main()
