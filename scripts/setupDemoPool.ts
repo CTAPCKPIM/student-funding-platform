@@ -71,8 +71,49 @@ async function main() {
     );
 
     /**
-     * @notice Step 1: Add the `user` to the whitelist in the `factory`
+     * @notice Step 1: whitelist in the factory
      */
+    await whitelist(signer, factory);
+
+    /**
+     * @notice Step 2: Create a project pool
+     */
+    await createProject(
+        factory,
+        factoryAddress,
+        deploymentAddresses,
+        addressesSFPPath
+    );
+
+    /**
+     * @notice Step 3: Minting tokens for the signer
+     */
+    await mintTokens(signer, token);
+
+    /**
+     * @notice Step 4: Approving project pool as spender for tokens
+     */
+    const projectPoolAddress = deploymentAddresses.latestProjectPool;
+    await approveFactory(signer, token, projectPoolAddress);
+
+    /**
+     * Step 5: Send tokens to the project pool
+     */
+    await contributeProject(signer, tokenAddress, projectPoolAddress);
+
+    console.log("\n" + "=".repeat(40));
+    console.log("Script setupDemoPool completed successfully!");
+    console.log("=".repeat(40));
+    console.log(`\nDemo Pool Address: ${deploymentAddresses.latestProjectPool}`);
+    console.log(`Contributor Account: ${signer.address}`);
+    console.log(`Contributed Amount: ${ethers.formatEther(contributeAmount)} tokens`);
+    console.log("\n" + "-".repeat(40));
+}
+
+/**
+ * @notice Add to the whitelist
+ */
+async function whitelist(signer: any, factory: any) {
     try {
         console.log(`\nSTEP 1:`);
         const whitelistTx = await factory.connect(signer).setWhitelistStatus(signer.address, true);
@@ -82,10 +123,17 @@ async function main() {
         console.error(`Error in Step 1:`, error);
         process.exit(1);
     }
+}
 
-    /**
-     * @notice Step 2: Create a project pool
-     */
+/**
+ * @notice Create a project pool
+ */
+async function createProject(
+    factory: any,
+    factoryAddress: string,
+    deploymentAddresses: any,
+    addressesSFPPath: any
+) {
     try {
         console.log(`\nSTEP 2:`);
 
@@ -104,7 +152,7 @@ async function main() {
         let projectCreatedLog: any;
 
         // Filter the logs in the transaction receipt by our Factory address
-        const factoryLogs = receipt?.logs?.filter(log =>
+        const factoryLogs = receipt?.logs?.filter((log: any) =>
             (log as any).address.toLowerCase() === factoryAddress.toLowerCase()
         );
 
@@ -157,10 +205,12 @@ async function main() {
         console.error(`Error in Step 2:`, error);
         process.exit(1);
     }
+}
 
-    /**
-     * @notice Step 3: Minting tokens for the signer
-     */
+/**
+ * @notice Mint the tokens
+ */
+async function mintTokens(signer: any, token:any) {
     try {
         console.log(`\nSTEP 3:`);
         const txMint = await token.mint(signer.address, amount);
@@ -170,11 +220,17 @@ async function main() {
         console.error(`Error in Step 3:`, error);
         process.exit(1);
     }
+    
+}
 
-    /**
-     * @notice Step 4: Approving project pool as spender for tokens
-     */
-    const projectPoolAddress = deploymentAddresses.latestProjectPool;
+/**
+ * @notice Approving project pool
+ */
+async function approveFactory(
+    signer: any,
+    token: any,
+    projectPoolAddress: string
+) {
     try{
         console.log(`\nSTEP 4:`);
         // Check address of the `project-pool`
@@ -190,10 +246,16 @@ async function main() {
         console.error(`Error in Step 4:`, error);
         process.exit(1);
     }
+}
 
-    /**
-     * Step 5: Send tokens to the project pool
-     */
+/**
+ * @notice Send tokens to the project pool
+ */
+async function contributeProject(
+    signer: any,
+    tokenAddress: string,
+    projectPoolAddress: string
+) {
     try {
         console.log(`\nSTEP 5:`);
         const projectPool = await ethers.getContractAt(
@@ -211,17 +273,9 @@ async function main() {
         console.log("-".repeat(40));
         
     } catch (error) {
-        console.error(`Error in Step 4:`, error);
+        console.error(`Error in Step 5:`, error);
         process.exit(1);
     }
-
-    console.log("\n" + "=".repeat(40));
-    console.log("Script setupDemoPool completed successfully!");
-    console.log("=".repeat(40));
-    console.log(`\nDemo Pool Address: ${deploymentAddresses.latestProjectPool}`);
-    console.log(`Contributor Account: ${signer.address}`);
-    console.log(`Contributed Amount: ${ethers.formatEther(contributeAmount)} tokens`);
-    console.log("\n" + "-".repeat(40));
 }
 
 main()
