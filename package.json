@@ -4,7 +4,15 @@
   "description": "Student financing platform",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "node": "npx hardhat node",
+    "build": "npx hardhat compile",
+    "test": "npx hardhat test",
+    "coverage": "npx hardhat coverage",
+    "deploy:hardhat": "npx hardhat run scripts/deploy.ts --network hardhat",
+    "deploy:localhost": "npx hardhat run scripts/deploy.ts --network localhost",
+    "deploy:sepolia": "npx hardhat run scripts/deploy.ts --network sepolia",
+    "upgrade:localhost": "npx hardhat run scripts/upgrade.ts --network localhost",
+    "upgrade:sepolia": "npx hardhat run scripts/upgrade.ts --network sepolia"
   },
   "keywords": [],
   "author": "",
