@@ -24,13 +24,13 @@ async function main() {
     // Reading and parsing data from a file
     const deploymentAddresses = JSON.parse(fs.readFileSync(addressesSFPPath, 'utf8'));
 
-    // Get the Beacon contract address
+    // Get the contracts addresses
     const beaconAddress = deploymentAddresses.beacon;
     const factoryAddress = deploymentAddresses.factory;
     const tokenAddress = deploymentAddresses.token;
 
     if (!beaconAddress && !factoryAddress && !tokenAddress) {
-        console.error("Error: Beacon address not found in file deployment-addresses.json");
+        console.error("Error: Addresses not found in file deployment-addresses.json");
         process.exit(1);
     }
     
