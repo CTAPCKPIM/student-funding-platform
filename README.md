@@ -1,6 +1,6 @@
 # Student Funding Platform
 
-![Code Coverage](https://img.shields.io/badge/coverage-100%25-brightgreen) ![License](https://imgc.shields.io/badge/License-MIT-blue.svg)
+![Code Coverage](https://img.shields.io/badge/coverage-100%25-brightgreen) ![License](https://img.shields.io/badge/License-MIT-blue.svg)
 
 ### Student Funding Platform (SFP)
 This is a decentralized platform solution for creating and managing decentralized funding pools for educational initiatives. The platform supports user whitelisting, creating upgradeable pools based on the Beacon Proxy pattern, and accepting contributions in specified ERC20/Native tokens.
