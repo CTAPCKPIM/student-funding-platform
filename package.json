@@ -12,7 +12,9 @@
     "deploy:localhost": "npx hardhat run scripts/deploy.ts --network localhost",
     "deploy:sepolia": "npx hardhat run scripts/deploy.ts --network sepolia",
     "upgrade:localhost": "npx hardhat run scripts/upgrade.ts --network localhost",
-    "upgrade:sepolia": "npx hardhat run scripts/upgrade.ts --network sepolia"
+    "upgrade:sepolia": "npx hardhat run scripts/upgrade.ts --network sepolia",
+    "setup:localhost": "npx hardhat run scripts/setupDemoPool.ts --network localhost",
+    "setup:sepolia": "npx hardhat run scripts/setupDemoPool.ts --network sepolia"
   },
   "keywords": [],
   "author": "",
